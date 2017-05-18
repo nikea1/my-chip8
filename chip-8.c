@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//TODO Get key and sprite address opcodes
+
 /*
  Opcodes
  ===================================================
@@ -107,6 +109,8 @@ unsigned short sp;
 
 unsigned char key[16];
 
+bool drawFlag;
+
 void chip8_Init(){
 
     
@@ -114,6 +118,7 @@ void chip8_Init(){
     sp = 0;     //clear stack pointer
     opcode = 0; //clear opcodes
     pc = 0x200; //starting point in mem
+    drawFlag = false;
     
     //clear memory
     for(int i = 0; i<4096; i++){
@@ -295,45 +300,41 @@ void chip8_emulateCycle(){
             V[(opcode&0x0F00)>>8] = (rand()%256)&(opcode&0x00FF);
             break;
         case 0xD000: //DXYN draw(Vx, Vy, N)
-            //TODO draw function and VF
-            
+            unsigned short x = V[(opcode&0x0F00)>>8];
+            unsigned short y = V[(opcode&0x00F0)>>4];
+            unsigned short height = opcode&0x000F;
+            unsigned short pixel;
+            V[15] = 0;
+           
+            for(int yline = 0; yline < height: yline++){
+                pixel = memory[I + yline];
+                for(int xline = 0; xline < 8; xline++){
+                    
+                    if(pixel & (0x80>>xline) == 1){
+                        
+                        if(gfx[(x + xline + ((y + yline)*64))] == 1)
+                            V[15] = 1;
+                        gfx[(x + xline + ((y + yline)*64))]^=1;
+                    }//end draw pixel loop
+                }//loop col
+            }//loop row
+            drawFlag = true;
             break;
         case 0xE000:
             switch(opcode&0x00FF){
-                case 0x9E: //EX9E
-                    //TODO key() == VX
+                case 0x9E: //EX9E key() == VX
+                    if(key[V[opcode&0x0F00 >> 8]] == 1) //if pressed
+                        pc+=2;
                     break;
                 case 0xA1: //EXA1
-                    //TODO key() != VX
+                    if(key[V[opcode&0x0F00 >> 8]] == 0) //if not pressed
+                        pc+=2;
                     break;
             }
             break;
         case 0xF000:
             switch(opcode&0x00FF){
-                case 0x07: //FX07 Vx = getDelay Timer
-                    V[(opcode&0x0F00)>>8] = delay_timer;
-                    break;
-                case 0x0A: //FX0A Vx = get_key();
-                    //TODO Vx = getkey()
-                    break;
-                case 0x15: //FX15 delay_timer = Vx
-                    delay_timer = V[(opcode&0x0F00)>>8];
-                    break;
-                case 0x18: //FX18 sound_timer = Vx
-                    sound_timer = V[(opcode&0x0F00)>>8];
-                    break;
-                case 0x1E: //FX1E I += Vx
-                    
-                    I += V[(opcode&0x0F00)>>8];
-//                    if(I > 0xFFF)
-//                        V[15] = 1;
-//                    else
-//                        V[15] = 0;
-                    break;
-                case 0x29:
-                    //TODO sprite_address(VX)
-                    break;
-                case 0x33:
+                
                 case 0x07: //FX07 Vx = getDelay Timer
                     V[(opcode&0x0F00)>>8] = delay_timer;
                     break;
@@ -370,7 +371,7 @@ void chip8_emulateCycle(){
 
             }
         default:
-             printf("Unknown opcode: 0x%X\n", opcode);
+            printf("Unknown opcode: 0x%X\n", opcode);
             break;
     
     }//end of decoding opcodes
