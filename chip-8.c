@@ -296,6 +296,7 @@ void chip8_emulateCycle(){
             break;
         case 0xD000: //DXYN draw(Vx, Vy, N)
             //TODO draw function and VF
+            
             break;
         case 0xE000:
             switch(opcode&0x00FF){
