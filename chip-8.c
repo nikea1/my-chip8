@@ -247,7 +247,7 @@ void chip8_emulateCycle(){
                 case 0x0003: //8XY3 Vx = Vx ^ Vy
                     V[(opcode&0x0F00)>>8] = V[(opcode&0x0F00)>>8] ^ V[(opcode&0x00F0)>>4];
                     break;
-                case 0x0004: //8XY4 Vx += Vy
+                case 0x0004: //8XY4 Vx += Vy Vx + Vy
                     if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
                         V[15] = 1;
                     else
@@ -256,16 +256,27 @@ void chip8_emulateCycle(){
                     V[(opcode&0x0F00)>>8] += V[(opcode&0x00F0)>>4];
                     
                     break;
-                case 0x0005: //8XY5 Vx -= Vy
+                case 0x0005: //8XY5 Vx -= Vy Vx - Vy
+                    if(V[(opcode & 0x00F0) >> 4] > (V[(opcode & 0x0F00) >> 8]))
+                        V[15] = 0;
+                    else
+                        V[15] = 1;
                     V[(opcode&0x0F00)>>8] -= V[(opcode&0x00F0)>>4];
                     break;
                 case 0x0006: //8XY6 Vx>>1
+                    V[15] = V[(opcode&0x0F00)>>8] & 0x0001;
                     V[(opcode&0x0F00)>>8] = V[(opcode&0x0F00)>>8] >> 1;
                     break;
                 case 0x0007: //8XY7 Vx = Vy - Vx
+                    if(V[(opcode & 0x00F0) >> 4] < (V[(opcode & 0x0F00) >> 8]))
+                        V[15] = 0;
+                    else
+                        V[15] = 1;
                     V[(opcode&0x0F00)>>8] = V[(opcode&0x00F0)>>4] - V[(opcode&0x0F00)>>8];
                     break;
                 case 0x000E: //8XYE Vx<<1
+                    V[15] = (V[(opcode&0x0F00)>>8] & 0x8000) >> 15;
+
                     V[(opcode&0x0F00)>>8] = V[(opcode&0x0F00)>>8] << 1;
                     break;
             }
@@ -284,7 +295,7 @@ void chip8_emulateCycle(){
             V[(opcode&0x0F00)>>8] = (rand()%256)&(opcode&0x00FF);
             break;
         case 0xD000: //DXYN draw(Vx, Vy, N)
-            //TODO draw function
+            //TODO draw function and VF
             break;
         case 0xE000:
             switch(opcode&0x00FF){
@@ -311,7 +322,12 @@ void chip8_emulateCycle(){
                     sound_timer = V[(opcode&0x0F00)>>8];
                     break;
                 case 0x1E: //FX1E I += Vx
+                    
                     I += V[(opcode&0x0F00)>>8];
+//                    if(I > 0xFFF)
+//                        V[15] = 1;
+//                    else
+//                        V[15] = 0;
                     break;
                 case 0x29:
                     //TODO sprite_address(VX)
