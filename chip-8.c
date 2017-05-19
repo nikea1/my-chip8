@@ -109,7 +109,39 @@ unsigned short sp;
 
 unsigned char key[16];
 
-bool drawFlag;
+//draw variables
+unsigned short drawFlag;
+unsigned short x;
+unsigned short y;
+unsigned short height;
+unsigned short pixel;
+
+void chip8_Debug_Display_Memory(){
+
+    //0x000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    
+    for (int i = 0; i < 4096; i++){
+        if(i%16 == 0)
+            printf("0x%03x: ", i);
+        printf("%02x ", memory[i]);
+        if(i%16 == 15)
+            printf("\n");
+    }
+    
+}
+
+void chip8_Debug_Display_All_Register(){
+    //printf("pc: 0x%03x\n", pc);
+    for(int i = 0; i < 16; i++){
+        printf("V%d: Hex: 0x%02x, Dec: %d\n", i, V[i], V[i]);
+    }
+}
+
+void chip8_Debug_Display_Register(int i){
+    //printf("pc: 0x%03x\n", pc);
+    printf("V%d: Hex: 0x%02x, Dec: %d\n", i, V[i], V[i]);
+}
+
 
 void chip8_Init(){
 
@@ -118,7 +150,7 @@ void chip8_Init(){
     sp = 0;     //clear stack pointer
     opcode = 0; //clear opcodes
     pc = 0x200; //starting point in mem
-    drawFlag = false;
+    drawFlag = 0;
     
     //clear memory
     for(int i = 0; i<4096; i++){
@@ -159,7 +191,7 @@ void chip8_load(char *filename){
     unsigned char buffer[3584]; //space for loaded program
     size_t bufferSize;  //size of loaded program
     
-    fp = fopen(filename, rb); //open file and read it in binary
+    fp = fopen(filename, "rb"); //open file and read it in binary
     if(fp == NULL){
         printf("Program %s does not exists", filename); //if file is no valid exit program
         exit(0);
@@ -179,6 +211,11 @@ void chip8_load(char *filename){
 void chip8_emulateCycle(){
     //Fetch opcode
     opcode = (memory[pc] << 8) | memory[pc+1];
+    
+    //debug print opcode
+    printf("Opcode: [0x%x]\n", opcode);
+    printf("pc: 0x%x\n", pc);
+    
     pc+=2;
     
     //Decode opcode
@@ -198,7 +235,7 @@ void chip8_emulateCycle(){
                     sp--;           //move stack pointer down
                     break;
                 default:// 0x0NNN not needed
-                    printf("Opcode [0x000]: Invalid Opcode 0x%x", opcode);
+                    printf("Opcode [0x000]: Invalid Opcode 0x%x\n", opcode);
                     break;
             }
             break;
@@ -213,13 +250,13 @@ void chip8_emulateCycle(){
             break;
         case 0x3000:
             //3XNN if VX == NN skip
-            if(V[(opcode&0x0F00)>>8] == opcode&0x00FF)
+            if(V[(opcode&0x0F00)>>8] == (opcode&0x00FF))
                 pc+=2;
             
             break;
         case 0x4000:
             //4XNN if VX != NN skip
-            if(V[(opcode&0x0F00)>>8] != opcode&0x00FF)
+            if(V[(opcode&0x0F00)>>8] != (opcode&0x00FF))
                 pc+=2;
             
             break;
@@ -231,12 +268,13 @@ void chip8_emulateCycle(){
             break;
         case 0x6000:
             //6XNN Vx = NN
-            V[opcode&0x0F00>>8] = opcode&0x00FF;
+//            printf("In [6000] %d\n", (opcode&0x0F00)>>8);
+            V[(opcode&0x0F00)>>8] = (opcode&0x00FF);
             
             break;
         case 0x7000:
             //7XNN Vx += NN
-            V[opcode&0x0F00>>8] += opcode&0x00FF;
+            V[opcode&0x0F00>>8] += (opcode&0x00FF);
             break;
         case 0x8000:
             switch(opcode&0x000F){
@@ -300,17 +338,21 @@ void chip8_emulateCycle(){
             V[(opcode&0x0F00)>>8] = (rand()%256)&(opcode&0x00FF);
             break;
         case 0xD000: //DXYN draw(Vx, Vy, N)
-            unsigned short x = V[(opcode&0x0F00)>>8];
-            unsigned short y = V[(opcode&0x00F0)>>4];
-            unsigned short height = opcode&0x000F;
-            unsigned short pixel;
+//            unsigned short x;
+//            unsigned short y;
+//            unsigned short height;
+//            unsigned short pixel;
+
+            x = V[(opcode&0x0F00)>>8];
+            y = V[(opcode&0x00F0)>>4];
+            height = opcode&0x000F;
             V[15] = 0;
            
-            for(int yline = 0; yline < height: yline++){
+            for(int yline = 0; yline < height; yline++){
                 pixel = memory[I + yline];
                 for(int xline = 0; xline < 8; xline++){
                     
-                    if(pixel & (0x80>>xline) == 1){
+                    if((pixel & (0x80>>xline)) == 1){
                         
                         if(gfx[(x + xline + ((y + yline)*64))] == 1)
                             V[15] = 1;
@@ -318,7 +360,7 @@ void chip8_emulateCycle(){
                     }//end draw pixel loop
                 }//loop col
             }//loop row
-            drawFlag = true;
+            drawFlag = 1;
             break;
         case 0xE000:
             switch(opcode&0x00FF){
@@ -391,6 +433,18 @@ void chip8_emulateCycle(){
 
 
 int main(){
-    
-    
+    //initialize chip 8
+    chip8_Init();
+    //load file
+    chip8_load("test.bin");
+    //show memory map
+    chip8_Debug_Display_Memory();
+    //run file for 60 cycles
+    for(int j = 0; j < 30; j++){
+        //one fetch - execute cycle
+        chip8_emulateCycle();
+        //display registers
+        chip8_Debug_Display_All_Register();
+    }
+    return 0;
 }
