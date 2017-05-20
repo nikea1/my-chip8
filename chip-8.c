@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//TODO Test functions
 //TODO Get key and sprite address opcodes
 
 /*
@@ -135,6 +136,7 @@ void chip8_Debug_Display_All_Register(){
     for(int i = 0; i < 16; i++){
         printf("V%d: Hex: 0x%02x, Dec: %d\n", i, V[i], V[i]);
     }
+    printf("I: Hex: 0x%0x, Dec: %d\n", I, I);
 }
 
 void chip8_Debug_Display_Register(int i){
@@ -342,11 +344,6 @@ void chip8_emulateCycle(){
             V[(opcode&0x0F00)>>8] = (rand()%256)&(opcode&0x00FF);
             break;
         case 0xD000: //DXYN draw(Vx, Vy, N)
-//            unsigned short x;
-//            unsigned short y;
-//            unsigned short height;
-//            unsigned short pixel;
-
             x = V[(opcode&0x0F00)>>8];
             y = V[(opcode&0x00F0)>>4];
             height = opcode&0x000F;
@@ -412,9 +409,6 @@ void chip8_emulateCycle(){
                     for(int i = 0; i <= ((opcode&0x0F00)>>8); i++)
                         V[i] = memory[I+i];
                     break;
-                    
-                                   
-
             }
         default:
             printf("Unknown opcode: 0x%X\n", opcode);
