@@ -148,6 +148,14 @@ unsigned short chip8_Debug_Get_Opcode(){
     return opcode;
 }
 
+void chip8_Debug_Display_Stack(){
+    printf("Stack pointer: %d\n", sp);
+    printf("Stack: ");
+    for(int i = 0; i < 16; i++){
+        printf("0x%04x ", stack[i]);
+    }
+    printf("\n");
+}
 
 void chip8_Init(){
 
@@ -237,8 +245,8 @@ void chip8_emulateCycle(){
                     break;
                 case 0x0EE:
                     //TODO: get return pc from stack
-                    pc = stack[sp]; //get pc from stack
                     sp--;           //move stack pointer down
+                    pc = stack[sp]; //get pc from stack
                     break;
                 default:// 0x0NNN not needed
                     printf("Opcode [0x000]: Invalid Opcode 0x%x\n", opcode);
@@ -410,6 +418,7 @@ void chip8_emulateCycle(){
                         V[i] = memory[I+i];
                     break;
             }
+            break;
         default:
             printf("Unknown opcode: 0x%X\n", opcode);
             break;
@@ -448,8 +457,11 @@ int main(int argc, char *argv[]){
         chip8_emulateCycle();
         //display registers
         chip8_Debug_Display_All_Register();
+        //display Stack
+        chip8_Debug_Display_Stack();
         if(chip8_Debug_Get_Opcode() == 0x0000)
             break;
     }
+    chip8_Debug_Display_Memory();
     return 0;
 }

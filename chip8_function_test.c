@@ -42,7 +42,7 @@ int main(){
         0xF0, 0x65, //220 load V0
         0x00, 0x00, //222 end
         
-        0x80, 0x00, //224 countTofive: V0 = 0
+        0x60, 0x00, //224 countTofive: V0 = 0
         0x40, 0x05, //226 loop: if(V0 != 5)
         0x00, 0xEE, //228 return
         0x70, 0x01, //22A V0 += 1
