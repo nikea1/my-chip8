@@ -142,6 +142,10 @@ void chip8_Debug_Display_Register(int i){
     printf("V%d: Hex: 0x%02x, Dec: %d\n", i, V[i], V[i]);
 }
 
+unsigned short chip8_Debug_Get_Opcode(){
+    return opcode;
+}
+
 
 void chip8_Init(){
 
@@ -274,7 +278,7 @@ void chip8_emulateCycle(){
             break;
         case 0x7000:
             //7XNN Vx += NN
-            V[opcode&0x0F00>>8] += (opcode&0x00FF);
+            V[(opcode&0x0F00)>>8] += (opcode&0x00FF);
             break;
         case 0x8000:
             switch(opcode&0x000F){
@@ -365,11 +369,11 @@ void chip8_emulateCycle(){
         case 0xE000:
             switch(opcode&0x00FF){
                 case 0x9E: //EX9E key() == VX
-                    if(key[V[opcode&0x0F00 >> 8]] == 1) //if pressed
+                    if(key[V[(opcode&0x0F00) >> 8]] == 1) //if pressed
                         pc+=2;
                     break;
                 case 0xA1: //EXA1
-                    if(key[V[opcode&0x0F00 >> 8]] == 0) //if not pressed
+                    if(key[V[(opcode&0x0F00) >> 8]] == 0) //if not pressed
                         pc+=2;
                     break;
             }
@@ -401,11 +405,11 @@ void chip8_emulateCycle(){
                     memory[I+2] = (V[(opcode&0x0F00)>>8] % 100) % 10;
                     break;
                 case 0x55: //FX55 Stores V0 to VX inclusive in memory I
-                    for(int i = 0; i <= (opcode&0x0F00>>8); i++)
+                    for(int i = 0; i <= ((opcode&0x0F00)>>8); i++)
                         memory[I+i] = V[i];
                     break;
                 case 0x65: //FX65 Loads V0 to VX inclusive from memory I
-                    for(int i = 0; i <= (opcode&0x0F00>>8); i++)
+                    for(int i = 0; i <= ((opcode&0x0F00)>>8); i++)
                         V[i] = memory[I+i];
                     break;
                     
@@ -432,19 +436,26 @@ void chip8_emulateCycle(){
 }
 
 
-int main(){
+int main(int argc, char *argv[]){
+    
+    if(argc < 2){
+        printf("Usage: %s <bin file>\n", argv[0]);
+        exit(1);
+    }
     //initialize chip 8
     chip8_Init();
     //load file
-    chip8_load("test.bin");
+    chip8_load(argv[1]);
     //show memory map
     chip8_Debug_Display_Memory();
     //run file for 60 cycles
-    for(int j = 0; j < 30; j++){
+    for(;;){
         //one fetch - execute cycle
         chip8_emulateCycle();
         //display registers
         chip8_Debug_Display_All_Register();
+        if(chip8_Debug_Get_Opcode() == 0x0000)
+            break;
     }
     return 0;
 }
