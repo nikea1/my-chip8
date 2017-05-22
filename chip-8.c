@@ -9,8 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//TODO Test functions
-//TODO Get key and sprite address opcodes
+//TODO sprite address opcodes
 
 /*
  Opcodes
@@ -259,7 +258,6 @@ void chip8_emulateCycle(){
         case 0x2000:
             stack[sp]=pc;           //push program counter into stack
             sp++;                   //increment stack pointer
-            
             pc = opcode & 0x0FFF;   //2NNN jump to function at NNN
             break;
         case 0x3000:
@@ -336,12 +334,18 @@ void chip8_emulateCycle(){
 
                     V[(opcode&0x0F00)>>8] = V[(opcode&0x0F00)>>8] << 1;
                     break;
+                default:
+                    printf("Opcode [0x8000]: Invalid Opcode 0x%x\n", opcode);
+                    break;
+
             }
             break;
         case 0x9000: //9XY0 if VX != VY skip
             if(V[(opcode&0x0F00)>>8] != V[(opcode&0x00F0)>>4])
                 pc+=2;
             break;
+        
+            
         case 0xA000: //ANNN I = NNN
             I = opcode & 0x0FFF;
             break;
@@ -373,13 +377,16 @@ void chip8_emulateCycle(){
             break;
         case 0xE000:
             switch(opcode&0x00FF){
-                case 0x9E: //EX9E key() == VX
+                case 0x9E: //EX9E if key() == VX
                     if(key[V[(opcode&0x0F00) >> 8]] == 1) //if pressed
                         pc+=2;
                     break;
-                case 0xA1: //EXA1
+                case 0xA1: //EXA1 if key() != VX
                     if(key[V[(opcode&0x0F00) >> 8]] == 0) //if not pressed
                         pc+=2;
+                    break;
+                default:
+                    printf("Opcode [0xE000]: Invalid Opcode 0x%x\n", opcode);
                     break;
             }
             break;
@@ -390,7 +397,16 @@ void chip8_emulateCycle(){
                     V[(opcode&0x0F00)>>8] = delay_timer;
                     break;
                 case 0x0A: //FX0A Vx = get_key();
-                    //TODO Vx = getkey()
+                    //TODO Vx = getkey() do not advance until key press
+                   
+                    pc -= 2; //stop advance
+                    for(int i = 0; i < 16; i++){        // check all keys
+                        if(key[i] == 1){                //find one that is pressed
+                            V[(opcode&0x0F00)>>8] = i;  // store key in register
+                            pc += 2;                    //advance
+                            break;
+                        }//end of if
+                    }//end of for
                     break;
                 case 0x15: //FX15 delay_timer = Vx
                     delay_timer = V[(opcode&0x0F00)>>8];
@@ -417,6 +433,10 @@ void chip8_emulateCycle(){
                     for(int i = 0; i <= ((opcode&0x0F00)>>8); i++)
                         V[i] = memory[I+i];
                     break;
+                default:
+                    printf("Opcode [0xF000]: Invalid Opcode 0x%x\n", opcode);
+                    break;
+
             }
             break;
         default:
@@ -428,7 +448,10 @@ void chip8_emulateCycle(){
     
     //update timers
     if(delay_timer > 0)
+    {
+//        printf("%d\n",delay_timer);
         delay_timer--;
+    }
     
     if(sound_timer > 0){
         if(sound_timer == 1)
