@@ -11,35 +11,55 @@
 #include "chip8.h"
 #include <GLUT/GLUT.h>
 
+void setupTexture();
+void updateTexture();
+void renderScene();
+void changeSize();
+void chip8_Debug_Display_Screen();
+void chip8_keypad(unsigned char key, int x, int y);
+void chip8_keypadUp(unsigned char key, int x, int y);
+
 #define SCREEN_HEIGHT 32
 #define SCREEN_WIDTH 64
 #define MODIFIER 10;
 
-
-static unsigned short drawFlag = 0;
+static GLubyte screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 
 int display_width = SCREEN_WIDTH * MODIFIER;
 int display_height = SCREEN_HEIGHT * MODIFIER;
 
-void renderScene();
-void changeSize(int x, int y);
-void normalKeys();
-void setupTexture();
+static GLuint texName;
 
-uint8_t screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3]; //screen data [Y][X][color]
+static unsigned short drawFlag = 0;
+
 Chip8 chip8;
 
-int main(int argc, const char * argv[]) {
+void makeCheckImage(void)
+{
+    int i, j, c;
     
-    if(argc < 2){
-        printf("Usage: %s <bin file>\n", argv[0]);
-        exit(1);
+    for (i = 0; i < SCREEN_HEIGHT; i++) {
+        for (j = 0; j < SCREEN_WIDTH; j++) {
+            c = ((((i&0x8)==0)^(((j&0x8))==0)))*255;
+            screenData[i][j][0] = (GLubyte) c;
+            screenData[i][j][1] = (GLubyte) c;
+            screenData[i][j][2] = (GLubyte) c;
+        }
     }
+}
+
+int main(int argc,  char * argv[]) {
+    
+    //    if(argc < 2){
+    //        printf("Usage: %s <bin file>\n", argv[0]);
+    //        exit(0);
+    //    }
     
     //initialize chip 8
     chip8_Init();
     //load file if exists
-    chip8_load(argv[1]);
+    //    chip_load(argv[1]);
+    chip8_load("VBRIX");
     
     //setup graphics
     glutInit(&argc, argv);
@@ -48,134 +68,234 @@ int main(int argc, const char * argv[]) {
     glutInitDisplayMode(GLUT_RGB|GLUT_DOUBLE|GLUT_DEPTH);
     glutCreateWindow("Chip8 GL");
     
+    setupTexture();
+    
     glutDisplayFunc(renderScene);
     glutReshapeFunc(changeSize);
     glutIdleFunc(renderScene);
-    
-    setupTexture();
+    glutKeyboardFunc(chip8_keypad);
+    glutKeyboardUpFunc(chip8_keypadUp);
     
     glutMainLoop();
     
-    //setup inputs
-    
-    
-    
-    //    //show memory map
-    //    //chip8_Debug_Display_Memory();
-    //    //run file for 60 cycles
-    //    for(;;){
-    //        //one fetch - execute cycle
-    //        chip8_emulateCycle();
-    //
-    //        //display registers
-    //        //chip8_Debug_Display_All_Register();
-    //
-    //        //display Stack
-    //        //chip8_Debug_Display_Stack();
-    //
-    //        if(chip8_Debug_Get_Opcode() == 0x0000)
-    //            break;
-    //
-    //        //draw to screen
-    //
-    //        //get key state
-    //    }
-    //    //chip8_Debug_Display_Memory();
-    //
-    
     return 0;
+}
+//Input
+void chip8_keypadUp(unsigned char key, int x, int y){
+    switch (key) {
+        case 0x31:
+            chip8.key[1] = 0;
+            break;
+        case 0x32:
+            chip8.key[2] = 0;
+            break;
+        case 0x33:
+            chip8.key[3] = 0;
+            break;
+        case 0x34:
+            chip8.key[12] = 0;
+            break;
+        case 'q':
+        case 'Q':
+            chip8.key[4] = 0;
+            break;
+        case 'w':
+        case 'W':
+            chip8.key[5] = 0;
+            break;
+        case 'e':
+        case 'E':
+            chip8.key[6] = 0;
+            break;
+        case 'r':
+        case 'R':
+            chip8.key[13] = 0;
+            break;
+        case 'a':
+        case 'A':
+            chip8.key[7] = 0;
+            break;
+        case 's':
+        case 'S':
+            chip8.key[8] = 0;
+            break;
+        case 'd':
+        case 'D':
+            chip8.key[9] = 0;
+            break;
+        case 'f':
+        case 'F':
+            chip8.key[14] = 0;
+            break;
+        case 'z':
+        case 'Z':
+            chip8.key[10] = 0;
+            break;
+        case 'x':
+        case 'X':
+            chip8.key[0] = 0;
+            break;
+        case 'c':
+        case 'C':
+            chip8.key[11] = 0;
+            break;
+        case 'v':
+        case 'V':
+            chip8.key[15] = 0;
+            break;
+        default:
+            break;
+    }
+}
+void chip8_keypad(unsigned char key, int x, int y){
+    switch(key){
+        case 27:
+            exit(0);
+            break;
+        case 0x31:
+            chip8.key[1] = 1;
+            break;
+        case 0x32:
+            chip8.key[2] = 1;
+            break;
+        case 0x33:
+            chip8.key[3] = 1;
+            break;
+        case 0x34:
+            chip8.key[12] = 1;
+            break;
+        case 'q':
+        case 'Q':
+            chip8.key[4] = 1;
+            break;
+        case 'w':
+        case 'W':
+            chip8.key[5] = 1;
+            break;
+        case 'e':
+        case 'E':
+            chip8.key[6] = 1;
+            break;
+        case 'r':
+        case 'R':
+            chip8.key[13] = 1;
+            break;
+        case 'a':
+        case 'A':
+            chip8.key[7] = 1;
+            break;
+        case 's':
+        case 'S':
+            chip8.key[8] = 1;
+            break;
+        case 'd':
+        case 'D':
+            chip8.key[9] = 1;
+            break;
+        case 'f':
+        case 'F':
+            chip8.key[14] = 1;
+            break;
+        case 'z':
+        case 'Z':
+            chip8.key[10] = 1;
+            break;
+        case 'x':
+        case 'X':
+            chip8.key[0] = 1;
+            break;
+        case 'c':
+        case 'C':
+            chip8.key[11] = 1;
+            break;
+        case 'v':
+        case 'V':
+            chip8.key[15] = 1;
+            break;
+    }
 }
 
 //Glut and graphics drawing
-
 void setupTexture(){
-    //clear screen
-    for(int y = 0; y < SCREEN_HEIGHT; y++){
-        for(int x = 0; x < SCREEN_WIDTH; x++){
-            for(int rgb = 0; rgb < 3; rgb++){
-                screenData[y][x][rgb] = 0;
-            }
-        }
-    }
-    //create texture
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE,
-                 (GLvoid*)screenData);
+    glClearColor (0.0, 0.0, 0.0, 0.0);
+    glShadeModel(GL_FLAT);
+    glEnable(GL_DEPTH_TEST);
     
-    //setup texture
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     
-    //enable texture
-    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &texName);
+    glBindTexture(GL_TEXTURE_2D, texName);
+    
+    //set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_NEAREST);
+    
 }
 
 void updateTexture(){
     //update pixels
-    for(int y = 0; y < SCREEN_HEIGHT; y++){
-        for(int x = 0; x < SCREEN_WIDTH; x++){
-            //colors pixels based on gfx state
-            if(chip8.gfx[(y * SCREEN_WIDTH)+x] == 0){
-                for(int rgb = 0; rgb < 3; rgb++){
-                    screenData[y][x][rgb] = 0;
-                }
+    for (int i = 0; i < SCREEN_HEIGHT; i++) {
+        for (int j = 0; j < SCREEN_WIDTH; j++) {
+            if(chip8.gfx[(i * SCREEN_WIDTH)+j] == 0){
+                screenData[i][j][0] = 0;
+                screenData[i][j][1] = 0;
+                screenData[i][j][2] = 0;
             }
             else{
-                for(int rgb = 0; rgb < 3; rgb++){
-                    screenData[y][x][rgb] = 255;
-                }
-            }//end of else
-        }//end of x loop
-    }//end of y loop
-    //update textures
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
+                screenData[i][j][0] = 255;
+                screenData[i][j][1] = 255;
+                screenData[i][j][2] = 255;
+            }
+            
+        }
+    }
+    //update texture
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH,
+                 SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                 screenData);
     
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+    glBindTexture(GL_TEXTURE_2D, texName);
     glBegin(GL_QUADS);
-    glTexCoord2d(0.0, 0.0); glVertex2d(0.0          , 0.0);
-    glTexCoord2d(1.0, 0.0); glVertex2d(display_width, 0.0);
-    glTexCoord2d(1.0, 1.0); glVertex2d(display_width, display_height);
-    glTexCoord2d(0.0, 1.0); glVertex2d(0.0          , display_height);
-    glEnd();
+    glTexCoord2f(0.0, 0.0); glVertex2d(0.0, 0.0);
+    glTexCoord2f(1.0, 0.0); glVertex2d(display_width, 0.0);
+    glTexCoord2f(1.0, 1.0); glVertex2d(display_width, display_height);
+    glTexCoord2f(0.0, 1.0); glVertex2d(0.0, display_height);
     
+    glEnd();
+    glutSwapBuffers();
+    
+    glDisable(GL_TEXTURE_2D);
 }
 
-//draw screen
 void renderScene(){
     chip8_emulateCycle();
+    chip8_Debug_Display_All_Register();
     if(drawFlag == 1){
-        //clear buffer frame
-        glClear(GL_COLOR_BUFFER_BIT);
-        
-        //draw pixels to texture
         updateTexture();
-        
-        //swap buffers
-        glutSwapBuffers();
-        //processed frame
-        
         drawFlag = 0;
     }
+    
 }
 
-//keep perspective
-void changeSize(int x, int y){
-    glClearColor(0.0f, 0.0f, 0.5f, 0.0);
+void changeSize(int w, int h){
+    glClearColor(0.0f, 0.0f, 0.5f, 0.0f);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluOrtho2D(0, x, y, 0);
+    gluOrtho2D(0, w, h, 0);
     glMatrixMode(GL_MODELVIEW);
-    glViewport(0, 0, x, y);
+    glViewport(0, 0, w, h);
     
-    display_height = y;
-    display_width = x;
-    
-    
-    
+    // Resize quad
+    display_width = w;
+    display_height = h;
 }
-
-//key inputs
-void normalKeys(){}
 
 //Chip 8 functions
 void chip8_Init(){
@@ -229,7 +349,7 @@ void chip8_load(char *filename){
     
     fp = fopen(filename, "rb"); //open file and read it in binary
     if(fp == NULL){
-        printf("File %s does not exists", filename); //if file is no valid exit program
+        printf("File %s does not exist.\n", filename); //if file is no valid exit program
         exit(0);
     }
     
@@ -247,7 +367,7 @@ void chip8_load(char *filename){
 void chip8_emulateCycle(){
     
     //draw variables
-    unsigned short drawFlag;
+    //unsigned short drawFlag;
     unsigned short x;
     unsigned short y;
     unsigned short height;
@@ -262,6 +382,10 @@ void chip8_emulateCycle(){
     
     chip8.pc+=2;
     
+    //loop back to main if end of memory reached
+    if(chip8.pc >= 0xFFF)
+        chip8.pc = 0x200;
+    
     //Decode opcode
     switch(chip8.opcode&0xF000){
             
@@ -272,9 +396,9 @@ void chip8_emulateCycle(){
                     for (int i = 0; i<(SCREEN_WIDTH*SCREEN_HEIGHT); i++) {
                         chip8.gfx[i] = 0;
                     }
+                    drawFlag = 1;
                     break;
                 case 0x0EE:
-                    //TODO: get return pc from stack
                     chip8.sp--;           //move stack pointer down
                     chip8.pc = chip8.stack[chip8.sp]; //get pc from stack
                     break;
@@ -287,15 +411,14 @@ void chip8_emulateCycle(){
             chip8.pc = chip8.opcode & 0x0FFF;   //1NNN Jump to NNN
             break;
         case 0x2000:
-            chip8.stack[chip8.sp]=chip8.pc;           //push program counter into stack
-            chip8.sp++;                   //increment stack pointer
+            chip8.stack[chip8.sp]=chip8.pc;     //push program counter into stack
+            chip8.sp++;                         //increment stack pointer
             chip8.pc = chip8.opcode & 0x0FFF;   //2NNN jump to function at NNN
             break;
         case 0x3000:
             //3XNN if VX == NN skip
             if(chip8.V[(chip8.opcode&0x0F00)>>8] == (chip8.opcode&0x00FF))
                 chip8.pc+=2;
-            
             break;
         case 0x4000:
             //4XNN if VX != NN skip
@@ -311,9 +434,7 @@ void chip8_emulateCycle(){
             break;
         case 0x6000:
             //6XNN Vx = NN
-            //            printf("In [6000] %d\n", (opcode&0x0F00)>>8);
             chip8.V[(chip8.opcode&0x0F00)>>8] = (chip8.opcode&0x00FF);
-            
             break;
         case 0x7000:
             //7XNN Vx += NN
@@ -325,20 +446,19 @@ void chip8_emulateCycle(){
                     chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.V[(chip8.opcode&0x00F0)>>4];
                     break;
                 case 0x0001: //8XY1 Vx = Vx | Vy
-                    chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.V[(chip8.opcode&0x0F00)>>8] | chip8.V[(chip8.opcode&0x00F0)>>4];
+                    chip8.V[(chip8.opcode&0x0F00)>>8] |= chip8.V[(chip8.opcode&0x00F0)>>4];
                     break;
                 case 0x0002: //8XY2 Vx = Vx & Vy
-                    chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.V[(chip8.opcode&0x0F00)>>8] & chip8.V[(chip8.opcode&0x00F0)>>4];
+                    chip8.V[(chip8.opcode&0x0F00)>>8] &= chip8.V[(chip8.opcode&0x00F0)>>4];
                     break;
                 case 0x0003: //8XY3 Vx = Vx ^ Vy
-                    chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.V[(chip8.opcode&0x0F00)>>8] ^ chip8.V[(chip8.opcode&0x00F0)>>4];
+                    chip8.V[(chip8.opcode&0x0F00)>>8] ^= chip8.V[(chip8.opcode&0x00F0)>>4];
                     break;
                 case 0x0004: //8XY4 Vx += Vy Vx + Vy
                     if(chip8.V[(chip8.opcode & 0x00F0) >> 4] > (0xFF - chip8.V[(chip8.opcode & 0x0F00) >> 8]))
                         chip8.V[15] = 1;
                     else
                         chip8.V[15] = 0;
-                    
                     chip8.V[(chip8.opcode&0x0F00)>>8] += chip8.V[(chip8.opcode&0x00F0)>>4];
                     
                     break;
@@ -361,22 +481,19 @@ void chip8_emulateCycle(){
                     chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.V[(chip8.opcode&0x00F0)>>4] - chip8.V[(chip8.opcode&0x0F00)>>8];
                     break;
                 case 0x000E: //8XYE Vx<<1
-                    chip8.V[15] = (chip8.V[(chip8.opcode&0x0F00)>>8] & 0x8000) >> 15;
+                    chip8.V[15] = (chip8.V[(chip8.opcode&0x0F00)>>8]) >> 7;
                     
                     chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.V[(chip8.opcode&0x0F00)>>8] << 1;
                     break;
                 default:
                     printf("Opcode [0x8000]: Invalid Opcode 0x%x\n", chip8.opcode);
                     break;
-                    
             }
             break;
         case 0x9000: //9XY0 if VX != VY skip
             if(chip8.V[(chip8.opcode&0x0F00)>>8] != chip8.V[(chip8.opcode&0x00F0)>>4])
                 chip8.pc+=2;
             break;
-            
-            
         case 0xA000: //ANNN I = NNN
             chip8.I = chip8.opcode & 0x0FFF;
             break;
@@ -390,18 +507,23 @@ void chip8_emulateCycle(){
             x = chip8.V[(chip8.opcode&0x0F00)>>8];
             y = chip8.V[(chip8.opcode&0x00F0)>>4];
             height = chip8.opcode&0x000F;
-            chip8.V[15] = 0;
+            chip8.V[15] = 0; //collision flag
+            
+            if(x > 64 || y > 32)
+            {
+                printf("We got a problem\n");
+            };
             
             for(int yline = 0; yline < height; yline++){
                 pixel = chip8.memory[chip8.I + yline];
                 for(int xline = 0; xline < 8; xline++){
                     
-                    if((pixel & (0x80>>xline)) == 1){
+                    if((pixel & (0x80>>xline)) != 0){
                         
                         if(chip8.gfx[(x + xline + ((y + yline)*SCREEN_WIDTH))] == 1)
                             chip8.V[15] = 1;
                         chip8.gfx[(x + xline + ((y + yline)*SCREEN_WIDTH))]^=1;
-                    }//end draw pixel loop
+                    }//end draw pixel process
                 }//loop col
             }//loop row
             drawFlag = 1;
@@ -423,16 +545,14 @@ void chip8_emulateCycle(){
             break;
         case 0xF000:
             switch(chip8.opcode&0x00FF){
-                    
                 case 0x07: //FX07 Vx = getDelay Timer
                     chip8.V[(chip8.opcode&0x0F00)>>8] = chip8.delay_timer;
                     break;
                 case 0x0A: //FX0A Vx = get_key();
-                    //TODO Vx = getkey() do not advance until key press
-                    
                     chip8.pc -= 2; //stop advance
                     for(int i = 0; i < 16; i++){        // check all keys
                         if(chip8.key[i] == 1){                //find one that is pressed
+                            printf("Found key %d", i);
                             chip8.V[(chip8.opcode&0x0F00)>>8] = i;  // store key in register
                             chip8.pc += 2;                    //advance
                             break;
@@ -449,7 +569,11 @@ void chip8_emulateCycle(){
                     chip8.I += chip8.V[(chip8.opcode&0x0F00)>>8];
                     break;
                 case 0x29:
-                    //TODO sprite_address(VX)
+                    //I = sprite_address(VX)
+                    x =(chip8.opcode&0x0F00)>>8;
+                    y = 80+chip8.V[x] * 5;
+                    chip8.I = y;
+                    printf("%x\n", chip8.I);
                     break;
                 case 0x33: //FX33 Binary coded decimal
                     chip8.memory[chip8.I] = chip8.V[(chip8.opcode&0x0F00)>>8] / 100;
@@ -480,14 +604,12 @@ void chip8_emulateCycle(){
     //update timers
     if(chip8.delay_timer > 0)
     {
-        //        printf("%d\n",delay_timer);
         chip8.delay_timer--;
     }
     
     if(chip8.sound_timer > 0){
         if(chip8.sound_timer == 1)
             printf("BEEP!\n");
-        
         chip8.sound_timer--;
     }
 }
@@ -507,8 +629,20 @@ void chip8_Debug_Display_Memory(){
     
 }
 
+void chip8_Debug_Display_Screen(){
+    
+    //0x000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    
+    for (int i = 0; i < (SCREEN_WIDTH*SCREEN_HEIGHT); i++){
+        
+        printf("%02x", chip8.gfx[i]);
+        if(i%64 == 63)
+            printf("\n");
+    }
+    
+}
+
 void chip8_Debug_Display_All_Register(){
-    //printf("pc: 0x%03x\n", pc);
     for(int i = 0; i < 16; i++){
         printf("V%d: Hex: 0x%02x, Dec: %d\n", i, chip8.V[i], chip8.V[i]);
     }
