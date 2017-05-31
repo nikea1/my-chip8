@@ -50,16 +50,16 @@ void makeCheckImage(void)
 
 int main(int argc,  char * argv[]) {
     
-    //    if(argc < 2){
-    //        printf("Usage: %s <bin file>\n", argv[0]);
-    //        exit(0);
-    //    }
+        if(argc < 2){
+            printf("Usage: %s <bin file>\n", argv[0]);
+            exit(0);
+        }
     
     //initialize chip 8
     chip8_Init();
     //load file if exists
-    //    chip_load(argv[1]);
-    chip8_load("VBRIX");
+    chip_load(argv[1]);
+    //chip8_load("VBRIX");
     
     //setup graphics
     glutInit(&argc, argv);
