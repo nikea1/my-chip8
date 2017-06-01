@@ -5,6 +5,7 @@
 //  Created by Adenike Adeyemi on 5/25/17.
 //  Copyright © 2017 Adenike Adeyemi. All rights reserved.
 //
+//  TODO: TANK, SYZYGY, MERLIN, VBRIX, VERS, WIPEOFF
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -357,7 +358,7 @@ void chip8_load(char *filename){
     bufferSize = fread(buffer, 1, 3583, fp);
     
     
-    //load program TODO: get buffersize and buffer
+    //load program
     for(int i = 0; i < bufferSize; i++){
         chip8.memory[i+512] = buffer[i];
     }
@@ -399,8 +400,8 @@ void chip8_emulateCycle(){
                     drawFlag = 1;
                     break;
                 case 0x0EE:
-                    chip8.sp--;           //move stack pointer down
-                    chip8.pc = chip8.stack[chip8.sp]; //get pc from stack
+                    chip8.sp--;                         //move stack pointer down
+                    chip8.pc = chip8.stack[chip8.sp];   //get pc from stack
                     break;
                 default:// 0x0NNN not needed
                     printf("Opcode [0x000]: Invalid Opcode 0x%x\n", chip8.opcode);
@@ -512,6 +513,7 @@ void chip8_emulateCycle(){
             if(x > 64 || y > 32)
             {
                 printf("We got a problem\n");
+                
             };
             
             for(int yline = 0; yline < height; yline++){
@@ -552,7 +554,8 @@ void chip8_emulateCycle(){
                     chip8.pc -= 2; //stop advance
                     for(int i = 0; i < 16; i++){        // check all keys
                         if(chip8.key[i] == 1){                //find one that is pressed
-                            printf("Found key %d", i);
+                            //printf("Found key %d", i);
+                            chip8.key[i] = 0;
                             chip8.V[(chip8.opcode&0x0F00)>>8] = i;  // store key in register
                             chip8.pc += 2;                    //advance
                             break;
